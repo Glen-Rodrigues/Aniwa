@@ -7,21 +7,13 @@ __pycache__/
 venv/
 env/
 
-# Pytest
-.pytest_cache/
-
 # Build artifacts
 build/
 dist/
 *.egg-info/
 
-# IDE files
-.vscode/
-.idea/
-
-# OS files
-.DS_Store
-Thumbs.db
+# Pytest
+.pytest_cache/
 
 # Coverage
 .coverage
@@ -32,6 +24,16 @@ htmlcov/
 
 # Environment variables
 .env
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/*
+!.vscode/settings.json
+
+.idea/
 
 # Generated reports
 *.html
