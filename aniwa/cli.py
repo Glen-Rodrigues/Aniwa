@@ -3,9 +3,10 @@ from pathlib import Path
 
 import typer
 
-from aniwa.io.readers import read_dataset
 from aniwa.core.profiler import profile_dataframe
+from aniwa.io.readers import read_dataset
 from aniwa.reports.console import render_console_report
+from aniwa.reports.html_report import render_html_report
 from aniwa.reports.json_report import render_json_report
 
 
@@ -15,6 +16,7 @@ app = typer.Typer(help="Aniwa — Universal dataset profiling and intelligence."
 class ReportFormat(str, Enum):
     console = "console"
     json = "json"
+    html = "html"
 
 
 @app.command()
@@ -46,9 +48,22 @@ def profile(
 
     if report == ReportFormat.console:
         render_console_report(dataset_profile)
+        return
 
-    elif report == ReportFormat.json:
+    if report == ReportFormat.json:
         json_output = render_json_report(dataset_profile, output)
 
-        if not output:
+        if output:
+            typer.echo(f"JSON report written to {output}")
+        else:
             typer.echo(json_output)
+
+        return
+
+    if report == ReportFormat.html:
+        if output is None:
+            output = "aniwa_report.html"
+
+        render_html_report(dataset_profile, output)
+        typer.echo(f"HTML report written to {output}")
+        return
