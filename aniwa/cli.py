@@ -19,6 +19,11 @@ class ReportFormat(str, Enum):
     html = "html"
 
 
+class ProfileMode(str, Enum):
+    fast = "fast"
+    deep = "deep"
+
+
 @app.command()
 def profile(
     path: str = typer.Argument(..., help="Path to dataset file."),
@@ -34,6 +39,12 @@ def profile(
         "-o",
         help="Output file path.",
     ),
+    mode: ProfileMode = typer.Option(
+        ProfileMode.deep,
+        "--mode",
+        "-m",
+        help="Profiling mode. Use 'fast' for lightweight checks or 'deep' for full profiling.",
+    ),
 ):
     """
     Profile a dataset.
@@ -44,7 +55,7 @@ def profile(
         raise typer.BadParameter(f"File does not exist: {path}")
 
     df = read_dataset(path)
-    dataset_profile = profile_dataframe(df)
+    dataset_profile = profile_dataframe(df, mode=mode.value)
 
     if report == ReportFormat.console:
         render_console_report(dataset_profile)

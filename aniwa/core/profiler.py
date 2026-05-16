@@ -24,7 +24,7 @@ NUMERIC_DTYPES = {
 }
 
 
-def profile_dataframe(df: pl.DataFrame) -> DatasetProfile:
+def profile_dataframe(df: pl.DataFrame, mode: str = "deep") -> DatasetProfile:
     rows = df.height
     columns = df.width
 
@@ -39,7 +39,7 @@ def profile_dataframe(df: pl.DataFrame) -> DatasetProfile:
 
         numeric_stats = None
 
-        if series.dtype in NUMERIC_DTYPES:
+        if mode == "deep" and series.dtype in NUMERIC_DTYPES:
             numeric_stats = NumericStats(
                 min=_safe_float(series.min()),
                 max=_safe_float(series.max()),
