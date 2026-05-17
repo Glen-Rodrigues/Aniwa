@@ -1,0 +1,30 @@
+[
+  {
+    "customer_id": 1,
+    "name": "Ama",
+    "email": "ama@example.com",
+    "country": "Ghana",
+    "revenue": 120
+  },
+  {
+    "customer_id": 2,
+    "name": "Kofi",
+    "email": "kofi@example.com",
+    "country": "Ghana",
+    "revenue": 250
+  },
+  {
+    "customer_id": 3,
+    "name": "Akosua",
+    "email": null,
+    "country": "Ghana",
+    "revenue": 300
+  },
+  {
+    "customer_id": 4,
+    "name": "Yaw",
+    "email": "yaw@example.com",
+    "country": "Nigeria",
+    "revenue": 150
+  }
+]
