@@ -8,6 +8,7 @@ from aniwa.io.readers import read_dataset
 from aniwa.reports.console import render_console_report
 from aniwa.reports.html_report import render_html_report
 from aniwa.reports.json_report import render_json_report
+from aniwa.reports.excel_report import render_excel_report
 from aniwa.models.enums import ReportSection
 
 app = typer.Typer(help="Aniwa — Universal dataset profiling and intelligence.")
@@ -17,6 +18,7 @@ class ReportFormat(str, Enum):
     console = "console"
     json = "json"
     html = "html"
+    excel = "excel"
 
 
 class ProfileMode(str, Enum):
@@ -120,4 +122,11 @@ def profile(
 
         render_html_report(dataset_profile, output)
         typer.echo(f"HTML report written to {output}")
+        return
+
+    if report == ReportFormat.excel:
+        if output is None:
+            output = "aniwa_report.xlsx"
+        render_excel_report(dataset_profile, output)
+        typer.echo(f"Excel report written to {output}")
         return
