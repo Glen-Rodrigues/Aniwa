@@ -1,11 +1,16 @@
+import platform
+import time
+from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
 
 import typer
 
+from aniwa import __version__
 from aniwa.core.profiler import profile_dataframe
 from aniwa.io.readers import read_dataset
 from aniwa.models.enums import ReportSection
+from aniwa.models.profile import ProfileMetadata
 from aniwa.reports.console import render_console_report
 from aniwa.reports.excel_report import render_excel_report
 from aniwa.reports.html_report import render_html_report
@@ -69,6 +74,48 @@ def resolve_sections(
     return all_sections
 
 
+def format_file_size(size_bytes: int) -> str:
+    if size_bytes < 1024:
+        return f"{size_bytes} B"
+
+    if size_bytes < 1024**2:
+        return f"{size_bytes / 1024:.2f} KB"
+
+    if size_bytes < 1024**3:
+        return f"{size_bytes / 1024**2:.2f} MB"
+
+    return f"{size_bytes / 1024**3:.2f} GB"
+
+
+def build_profile_metadata(
+    dataset_path: Path,
+    mode: ProfileMode,
+    report: ReportFormat,
+    template: str,
+    sections: set[ReportSection],
+    include: str | None,
+    exclude: str | None,
+    duration_seconds: float,
+) -> ProfileMetadata:
+    include_sections = validate_sections(include)
+    exclude_sections = validate_sections(exclude)
+
+    return ProfileMetadata(
+        generated_at=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
+        aniwa_version=__version__,
+        python_version=platform.python_version(),
+        dataset_path=str(dataset_path),
+        dataset_file_type=dataset_path.suffix.lower().lstrip(".").upper(),
+        dataset_size=format_file_size(dataset_path.stat().st_size),
+        profiling_mode=mode.value,
+        report_format=report.value,
+        report_template=template if report in {ReportFormat.html, ReportFormat.pdf} else None,
+        included_sections=include_sections or sorted(section.value for section in sections),
+        excluded_sections=exclude_sections,
+        profiling_duration=f"{duration_seconds:.2f}s",
+    )
+
+
 @app.command()
 def profile(
     path: str = typer.Argument(..., help="Path to dataset file."),
@@ -119,8 +166,23 @@ def profile(
     if not dataset_path.exists():
         raise typer.BadParameter(f"File does not exist: {path}")
 
+    start_time = time.perf_counter()
+
     df = read_dataset(path)
     dataset_profile = profile_dataframe(df, mode=mode.value, sections=sections)
+
+    duration_seconds = time.perf_counter() - start_time
+
+    dataset_profile.metadata = build_profile_metadata(
+        dataset_path=dataset_path,
+        mode=mode,
+        report=report,
+        template=template,
+        sections=sections,
+        include=include,
+        exclude=exclude,
+        duration_seconds=duration_seconds,
+    )
 
     if report == ReportFormat.console:
         render_console_report(dataset_profile)
@@ -156,6 +218,7 @@ def profile(
             render_excel_report(dataset_profile, output)
         except ValueError as exc:
             raise typer.BadParameter(str(exc)) from exc
+
         typer.echo(f"Excel report written to {output}")
         return
 
