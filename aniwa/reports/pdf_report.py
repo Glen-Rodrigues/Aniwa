@@ -19,6 +19,7 @@ PDF_THEMES = {
         "page_bg": "#f8fafc",
         "text": "#0f172a",
         "muted": "#64748b",
+        "metadata": "#0891b2",
         "summary": "#2563eb",
         "schema": "#0f172a",
         "statistics": "#7c3aed",
@@ -31,6 +32,7 @@ PDF_THEMES = {
         "page_bg": "#ffffff",
         "text": "#111827",
         "muted": "#6b7280",
+        "metadata": "#374151",
         "summary": "#111827",
         "schema": "#374151",
         "statistics": "#4b5563",
@@ -43,6 +45,7 @@ PDF_THEMES = {
         "page_bg": "#ffffff",
         "text": "#111827",
         "muted": "#6b7280",
+        "metadata": "#475569",
         "summary": "#334155",
         "schema": "#1f2937",
         "statistics": "#475569",
@@ -55,6 +58,7 @@ PDF_THEMES = {
         "page_bg": "#eff6ff",
         "text": "#172554",
         "muted": "#475569",
+        "metadata": "#1e3a8a",
         "summary": "#1d4ed8",
         "schema": "#1e3a8a",
         "statistics": "#0f766e",
@@ -67,6 +71,7 @@ PDF_THEMES = {
         "page_bg": "#020617",
         "text": "#e5e7eb",
         "muted": "#94a3b8",
+        "metadata": "#0891b2",
         "summary": "#0f172a",
         "schema": "#1e293b",
         "statistics": "#334155",
@@ -112,65 +117,80 @@ def render_pdf_report(
     )
     elements.append(Spacer(1, 20))
 
-    elements.append(Paragraph("Dataset Summary", styles["Heading2"]))
+    if profile.metadata:
+        elements.append(Paragraph("Profiling Metadata", styles["Heading2"]))
+        metadata_table = Table(_build_metadata_data(profile), colWidths=[180, 520])
+        _style_table(metadata_table, header_color=theme["metadata"], theme=theme)
+        elements.append(metadata_table)
+        elements.append(Spacer(1, 24))
 
-    summary_data = [
-        ["Metric", "Value"],
-        ["Rows", f"{profile.summary.rows:,}"],
-        ["Columns", f"{profile.summary.columns:,}"],
-        ["Duplicate Rows", f"{profile.quality.duplicate_rows:,}"],
-        ["Duplicate %", f"{profile.quality.duplicate_percent}%"],
-    ]
+    if profile.summary or profile.quality:
+        elements.append(Paragraph("Dataset Summary", styles["Heading2"]))
 
-    summary_table = Table(summary_data, colWidths=[200, 200])
-    _style_table(summary_table, header_color=theme["summary"], theme=theme)
-    elements.append(summary_table)
-    elements.append(Spacer(1, 24))
+        summary_data = [["Metric", "Value"]]
 
-    elements.append(Paragraph("Schema Profile", styles["Heading2"]))
+        if profile.summary:
+            summary_data.append(["Rows", f"{profile.summary.rows:,}"])
+            summary_data.append(["Columns", f"{profile.summary.columns:,}"])
 
-    column_data = [["Column", "Type", "Nulls", "Null %", "Unique"]]
+        if profile.quality:
+            summary_data.append(
+                ["Duplicate Rows", f"{profile.quality.duplicate_rows:,}"]
+            )
+            summary_data.append(
+                ["Duplicate %", f"{profile.quality.duplicate_percent}%"]
+            )
 
-    for col in profile.columns:
-        column_data.append(
-            [
-                col.name,
-                col.dtype,
-                f"{col.null_count:,}",
-                f"{col.null_percent}%",
-                f"{col.unique_count:,}",
-            ]
-        )
+        summary_table = Table(summary_data, colWidths=[200, 200])
+        _style_table(summary_table, header_color=theme["summary"], theme=theme)
+        elements.append(summary_table)
+        elements.append(Spacer(1, 24))
 
-    column_table = Table(column_data, repeatRows=1)
-    _style_table(column_table, header_color=theme["schema"], theme=theme)
-    elements.append(column_table)
-    elements.append(Spacer(1, 24))
+    if profile.columns:
+        elements.append(Paragraph("Schema Profile", styles["Heading2"]))
 
-    numeric_columns = [col for col in profile.columns if col.numeric_stats]
+        column_data = [["Column", "Type", "Nulls", "Null %", "Unique"]]
 
-    if numeric_columns:
-        elements.append(Paragraph("Numeric Statistics", styles["Heading2"]))
-
-        stats_data = [["Column", "Min", "Max", "Mean", "Median", "Std"]]
-
-        for col in numeric_columns:
-            stats = col.numeric_stats
-            stats_data.append(
+        for col in profile.columns:
+            column_data.append(
                 [
                     col.name,
-                    _format_value(stats.min),
-                    _format_value(stats.max),
-                    _format_value(stats.mean),
-                    _format_value(stats.median),
-                    _format_value(stats.std),
+                    col.dtype,
+                    f"{col.null_count:,}",
+                    f"{col.null_percent}%",
+                    f"{col.unique_count:,}",
                 ]
             )
 
-        stats_table = Table(stats_data, repeatRows=1)
-        _style_table(stats_table, header_color=theme["statistics"], theme=theme)
-        elements.append(stats_table)
+        column_table = Table(column_data, repeatRows=1)
+        _style_table(column_table, header_color=theme["schema"], theme=theme)
+        elements.append(column_table)
         elements.append(Spacer(1, 24))
+
+        numeric_columns = [col for col in profile.columns if col.numeric_stats]
+
+        if numeric_columns:
+            elements.append(Paragraph("Numeric Statistics", styles["Heading2"]))
+
+            stats_data = [["Column", "Min", "Max", "Mean", "Median", "Std"]]
+
+            for col in numeric_columns:
+                stats = col.numeric_stats
+                stats_data.append(
+                    [
+                        col.name,
+                        _format_value(stats.min),
+                        _format_value(stats.max),
+                        _format_value(stats.mean),
+                        _format_value(stats.median),
+                        _format_value(stats.std),
+                    ]
+                )
+
+            stats_table = Table(stats_data, repeatRows=1)
+            _style_table(stats_table, header_color=theme["statistics"], theme=theme)
+            elements.append(stats_table)
+            elements.append(Spacer(1, 24))
 
     if profile.insights:
         elements.append(Paragraph("Insights", styles["Heading2"]))
@@ -197,6 +217,53 @@ def render_pdf_report(
         onFirstPage=lambda canvas, doc: _draw_page_background(canvas, doc, theme),
         onLaterPages=lambda canvas, doc: _draw_page_background(canvas, doc, theme),
     )
+
+
+def _build_metadata_data(profile: DatasetProfile) -> list[list[str]]:
+    if not profile.metadata:
+        return [["Field", "Value"]]
+
+    metadata = profile.metadata
+    rows = [["Field", "Value"]]
+
+    _add_metadata_row(rows, "Generated At", metadata.generated_at)
+    _add_metadata_row(rows, "Aniwa Version", metadata.aniwa_version)
+    _add_metadata_row(rows, "Python Version", metadata.python_version)
+    _add_metadata_row(rows, "Dataset Path", metadata.dataset_path)
+    _add_metadata_row(rows, "Dataset File Type", metadata.dataset_file_type)
+    _add_metadata_row(rows, "Dataset Size", metadata.dataset_size)
+    _add_metadata_row(rows, "Profiling Mode", metadata.profiling_mode)
+    _add_metadata_row(rows, "Report Format", metadata.report_format)
+    _add_metadata_row(rows, "Report Template", metadata.report_template)
+
+    if metadata.included_sections:
+        _add_metadata_row(
+            rows,
+            "Included Sections",
+            ", ".join(metadata.included_sections),
+        )
+
+    if metadata.excluded_sections:
+        _add_metadata_row(
+            rows,
+            "Excluded Sections",
+            ", ".join(metadata.excluded_sections),
+        )
+
+    _add_metadata_row(rows, "Profiling Duration", metadata.profiling_duration)
+
+    return rows
+
+
+def _add_metadata_row(
+    rows: list[list[str]],
+    field: str,
+    value: str | None,
+) -> None:
+    if value is None:
+        return
+
+    rows.append([field, value])
 
 
 def _get_theme(template: str) -> dict[str, str]:

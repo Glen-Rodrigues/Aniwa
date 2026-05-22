@@ -111,6 +111,15 @@
             border-bottom: none;
         }
 
+        .metadata-table td:first-child {
+            width: 220px;
+            color: #111827;
+        }
+
+        .metadata-table td:last-child {
+            word-break: break-word;
+        }
+
         .charts {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -227,6 +236,99 @@
             <div class="value">{{ profile.quality.duplicate_percent }}%</div>
         </div>
     </div>
+
+    {% if profile.metadata %}
+    <section>
+        <h2>Profiling Metadata</h2>
+        <table class="metadata-table">
+            <tbody>
+            {% if profile.metadata.generated_at %}
+            <tr>
+                <td><strong>Generated At</strong></td>
+                <td>{{ profile.metadata.generated_at }}</td>
+            </tr>
+            {% endif %}
+
+            {% if profile.metadata.aniwa_version %}
+            <tr>
+                <td><strong>Aniwa Version</strong></td>
+                <td>{{ profile.metadata.aniwa_version }}</td>
+            </tr>
+            {% endif %}
+
+            {% if profile.metadata.python_version %}
+            <tr>
+                <td><strong>Python Version</strong></td>
+                <td>{{ profile.metadata.python_version }}</td>
+            </tr>
+            {% endif %}
+
+            {% if profile.metadata.dataset_path %}
+            <tr>
+                <td><strong>Dataset Path</strong></td>
+                <td>{{ profile.metadata.dataset_path }}</td>
+            </tr>
+            {% endif %}
+
+            {% if profile.metadata.dataset_file_type %}
+            <tr>
+                <td><strong>Dataset File Type</strong></td>
+                <td>{{ profile.metadata.dataset_file_type }}</td>
+            </tr>
+            {% endif %}
+
+            {% if profile.metadata.dataset_size %}
+            <tr>
+                <td><strong>Dataset Size</strong></td>
+                <td>{{ profile.metadata.dataset_size }}</td>
+            </tr>
+            {% endif %}
+
+            {% if profile.metadata.profiling_mode %}
+            <tr>
+                <td><strong>Profiling Mode</strong></td>
+                <td>{{ profile.metadata.profiling_mode }}</td>
+            </tr>
+            {% endif %}
+
+            {% if profile.metadata.report_format %}
+            <tr>
+                <td><strong>Report Format</strong></td>
+                <td>{{ profile.metadata.report_format }}</td>
+            </tr>
+            {% endif %}
+
+            {% if profile.metadata.report_template %}
+            <tr>
+                <td><strong>Report Template</strong></td>
+                <td>{{ profile.metadata.report_template }}</td>
+            </tr>
+            {% endif %}
+
+            {% if profile.metadata.included_sections %}
+            <tr>
+                <td><strong>Included Sections</strong></td>
+                <td>{{ profile.metadata.included_sections | join(", ") }}</td>
+            </tr>
+            {% endif %}
+
+            {% if profile.metadata.excluded_sections %}
+            <tr>
+                <td><strong>Excluded Sections</strong></td>
+                <td>{{ profile.metadata.excluded_sections | join(", ") }}</td>
+            </tr>
+            {% endif %}
+
+            {% if profile.metadata.profiling_duration %}
+            <tr>
+                <td><strong>Profiling Duration</strong></td>
+                <td>{{ profile.metadata.profiling_duration }}</td>
+            </tr>
+            {% endif %}
+            </tbody>
+        </table>
+    </section>
+    {% endif %}
 
     <section>
         <h2>Column Profile</h2>
