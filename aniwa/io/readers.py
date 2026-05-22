@@ -19,10 +19,13 @@ def read_dataset(path: str) -> pl.DataFrame:
     if suffix == ".json":
         return pl.read_json(file_path)
 
+    if suffix == ".jsonl":
+        return pl.read_ndjson(file_path)
+
     if suffix in [".parquet", ".pq"]:
         return pl.read_parquet(file_path)
 
     raise ValueError(
         f"Unsupported file type: {suffix}. "
-        "Supported types: ['.csv', '.tsv', '.json', '.parquet', '.xls', '.xlsx']"
+        "Supported types: ['.csv', '.tsv', '.json', '.jsonl', '.parquet', '.xls', '.xlsx']"
     )

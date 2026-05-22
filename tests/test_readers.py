@@ -101,3 +101,16 @@ def test_read_tsv(tmp_path):
 
     assert df.shape == (2, 3)
     assert df.columns == ["id", "name", "country"]
+
+def test_read_jsonl(tmp_path):
+    file_path = tmp_path / "events.jsonl"
+    file_path.write_text(
+        '{"id": 1, "event": "signup", "country": "Ghana"}\n'
+        '{"id": 2, "event": "purchase", "country": "Nigeria"}\n',
+        encoding="utf-8",
+    )
+
+    df = read_dataset(str(file_path))
+
+    assert df.shape == (2, 3)
+    assert df.columns == ["id", "event", "country"]

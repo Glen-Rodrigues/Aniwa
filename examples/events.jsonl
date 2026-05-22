@@ -1,0 +1,5 @@
+{"event_id":1,"event_type":"signup","user_id":101,"country":"Ghana","amount":0}
+{"event_id":2,"event_type":"purchase","user_id":101,"country":"Ghana","amount":120}
+{"event_id":3,"event_type":"purchase","user_id":102,"country":"Nigeria","amount":250}
+{"event_id":4,"event_type":"refund","user_id":102,"country":"Nigeria","amount":-50}
+{"event_id":5,"event_type":"signup","user_id":103,"country":"Kenya","amount":0}
