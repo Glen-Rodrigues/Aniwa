@@ -106,7 +106,7 @@ def profile(
         "default",
         "--template",
         "-t",
-        help="HTML report template. Options: default, clean, compact, enterprise, dark.",
+        help="Report template for HTML/PDF outputs. Options: default, clean, compact, enterprise, dark.",
     ),
 ):
     """
