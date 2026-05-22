@@ -96,6 +96,7 @@ def render_pdf_report(
 ) -> None:
     theme = _get_theme(template)
     output_path = Path(output)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
 
     doc = SimpleDocTemplate(
         str(output_path),
