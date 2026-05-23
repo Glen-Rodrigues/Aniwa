@@ -6,6 +6,7 @@ from pathlib import Path
 
 import polars as pl
 import typer
+import os
 
 from aniwa import __version__
 from aniwa.core.profiler import profile_dataframe
@@ -18,6 +19,7 @@ from aniwa.reports.html_report import render_html_report
 from aniwa.reports.json_report import render_json_report
 from aniwa.reports.markdown_report import render_markdown_report
 from aniwa.reports.pdf_report import render_pdf_report
+from aniwa.config import load_config
 
 
 app = typer.Typer(help="Aniwa - Universal dataset profiling and intelligence.")
@@ -195,18 +197,37 @@ def build_profile_metadata(
         ),
     )
 
+def find_config_file():
+    for filename in ["aniwa.yaml", "aniwa.yml", "aniwa.toml", "aniwa.json"]:
+        if os.path.exists(filename):
+            return filename
+    return None
+
+def get_config():
+    config_file = find_config_file()
+    if config_file:
+        cfg = load_config(config_file)
+        # Falls 'include' eine Liste ist, in String umwandeln für Typer
+        if isinstance(cfg.get("include"), list):
+            cfg["include"] = ",".join(cfg["include"])
+        if isinstance(cfg.get("exclude"), list):
+            cfg["exclude"] = ",".join(cfg["exclude"])
+        return cfg
+    return {}
+
+config = get_config()
 
 @app.command()
 def profile(
     path: str = typer.Argument(..., help="Path to dataset file."),
     report: ReportFormat = typer.Option(
-        ReportFormat.console,
-        "--report",
+        config.get("report", ReportFormat.console), 
+        "--report", 
         "-r",
-        help="Report format.",
+        help="Report format"
     ),
     output: str | None = typer.Option(
-        None,
+        config.get("output", None),
         "--output",
         "-o",
         help="Output file path.",
@@ -218,25 +239,25 @@ def profile(
         help="Output directory for reports. Ignored if --output is specified.",
     ),
     mode: ProfileMode = typer.Option(
-        ProfileMode.deep,
+        config.get("mode", ProfileMode.deep),   
         "--mode",
         "-m",
         help="Profiling mode. Use 'fast' for lightweight checks or 'deep' for full profiling.",
     ),
     include: str | None = typer.Option(
-        None,
+        config.get("include", None),
         "--include",
         "-i",
         help="Comma-separated list of report sections to include.",
     ),
     exclude: str | None = typer.Option(
-        None,
+        config.get("exclude", None),
         "--exclude",
         "-e",
         help="Comma-separated list of report sections to exclude.",
     ),
     template: str = typer.Option(
-        "default",
+        config.get("template", "default"),
         "--template",
         "-t",
         help="Report template for HTML/PDF outputs. Options: default, clean, compact, enterprise, dark.",
