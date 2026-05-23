@@ -1,7 +1,5 @@
 import json
-import os
 import pathlib
-import re
 import sys
 from typing import Any, cast
 
@@ -15,8 +13,6 @@ except ModuleNotFoundError:
 
 def load_config(
     file_path: str,
-    env: str | None = None,
-    expand_env_vars: bool = True,
 ) -> dict[str, Any]:
     path = pathlib.Path(file_path)
 
