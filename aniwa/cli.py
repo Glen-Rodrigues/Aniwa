@@ -216,6 +216,9 @@ config = get_config()
 @app.command()
 def profile(
     path: str = typer.Argument(..., help="Path to dataset file."),
+    config_file: str = typer.Option(
+        None, "--config", "-c", help="Path to custom configuration file."
+    ),
     report: ReportFormat = typer.Option(
         config.get("report", ReportFormat.console), 
         "--report", 
@@ -259,6 +262,14 @@ def profile(
         help="Report template for HTML/PDF outputs. Options: default, clean, compact, enterprise, dark.",
     ),
 ):
+    
+    if config_file:
+        if not os.path.exists(config_file):
+            raise typer.BadParameter(f"Configuration file not found: {config_file}")
+        config = get_flattened_config(config_file)
+    else:
+        config = get_config()
+    
     """
     Profile a dataset.
     """
