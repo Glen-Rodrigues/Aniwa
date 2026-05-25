@@ -268,7 +268,8 @@ def profile(
             raise typer.BadParameter(f"Configuration file not found: {config_file}")
         active_config = get_flattened_config(config_file)
     else:
-        active_config = get_config()
+        default_file = find_config_file()
+        active_config = get_flattened_config(default_file) if default_file else {}
     
     """
     Profile a dataset.
