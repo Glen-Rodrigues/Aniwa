@@ -266,14 +266,22 @@ def profile(
     if config_file:
         if not os.path.exists(config_file):
             raise typer.BadParameter(f"Configuration file not found: {config_file}")
-        config = get_flattened_config(config_file)
+        active_config = get_flattened_config(config_file)
     else:
-        config = get_config()
+        active_config = get_config()
     
     """
     Profile a dataset.
     """
+
+    report = report or active_config.get("report", ReportFormat.console)
+    output = output or active_config.get("output", None)
+    mode = mode or active_config.get("mode", ProfileMode.deep)
+    include = include or active_config.get("include", None)
+    exclude = exclude or active_config.get("exclude", None)
+    template = template or active_config.get("template", "default")
     sections = resolve_sections(include, exclude)
+
 
     output = resolve_output_path(output, output_dir, report)
 
