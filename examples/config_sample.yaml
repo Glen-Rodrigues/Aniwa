@@ -1,0 +1,13 @@
+mode: deep
+
+report:
+  format: console
+  template: dark
+  output_dir: reports/
+
+sections:
+  include:
+    - summary
+    - schema
+    - statistics
+    - insights
