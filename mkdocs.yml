@@ -1,19 +1,40 @@
 site_name: Aniwa
 site_description: Universal dataset profiling and intelligence tool.
 site_author: Reginald Erzoah
+site_url: https://reginalderzoah.github.io/Aniwa/
+
 repo_url: https://github.com/ReginaldErzoah/Aniwa
 repo_name: ReginaldErzoah/Aniwa
+edit_uri: edit/main/docs/
 
 theme:
   name: material
   language: en
+
+  palette:
+    - scheme: slate
+      primary: black
+      accent: amber
+
+  font:
+    text: Inter
+    code: JetBrains Mono
+
+  logo: assets/aniwa-logo.png
+  favicon: assets/favicon.ico
+
   features:
     - navigation.sections
     - navigation.expand
     - navigation.top
+    - navigation.instant
+    - navigation.tracking
     - search.highlight
     - search.suggest
+    - search.share
     - content.code.copy
+    - content.code.annotate
+    - toc.follow
 
 nav:
   - Home: index.md
@@ -49,15 +70,23 @@ nav:
       - v0.1.1: release-notes/v0.1.1.md
       - v0.1.2: release-notes/v0.1.2.md
 
+plugins:
+  - search
+
 markdown_extensions:
   - admonition
-  - toc:
-      permalink: true
+  - attr_list
+  - md_in_html
   - tables
   - fenced_code
-  - attr_list
-  - pymdownx.highlight
+  - toc:
+      permalink: true
+  - pymdownx.highlight:
+      anchor_linenums: true
   - pymdownx.superfences
   - pymdownx.details
   - pymdownx.tabbed:
       alternate_style: true
+  - pymdownx.emoji
+  - pymdownx.tasklist:
+      custom_checkbox: true
