@@ -3,12 +3,13 @@ import time
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
+from typing import Any
 
 import polars as pl
 import typer
-import os
 
 from aniwa import __version__
+from aniwa.config import get_flattened_config
 from aniwa.core.profiler import profile_dataframe
 from aniwa.io.readers import read_dataset
 from aniwa.models.enums import ReportSection
@@ -19,10 +20,17 @@ from aniwa.reports.html_report import render_html_report
 from aniwa.reports.json_report import render_json_report
 from aniwa.reports.markdown_report import render_markdown_report
 from aniwa.reports.pdf_report import render_pdf_report
-from aniwa.config import get_flattened_config
 
 
 app = typer.Typer(help="Aniwa - Universal dataset profiling and intelligence.")
+
+
+CONFIG_FILE_NAMES = (
+    "aniwa.yaml",
+    "aniwa.yml",
+    "aniwa.toml",
+    "aniwa.json",
+)
 
 
 class ReportFormat(str, Enum):
@@ -84,6 +92,74 @@ def resolve_sections(
 
     return all_sections
 
+
+def discover_config_file() -> str | None:
+    for filename in CONFIG_FILE_NAMES:
+        path = Path.cwd() / filename
+
+        if path.exists():
+            return str(path)
+
+    return None
+
+
+def load_active_config(config_file: str | None) -> dict[str, Any]:
+    if config_file:
+        path = Path(config_file)
+
+        if not path.exists():
+            raise typer.BadParameter(f"Configuration file not found: {config_file}")
+
+        try:
+            return get_flattened_config(str(path))
+        except ValueError as exc:
+            raise typer.BadParameter(f"Configuration error: {exc}") from exc
+
+    discovered_config = discover_config_file()
+
+    if discovered_config is None:
+        return {}
+
+    try:
+        return get_flattened_config(discovered_config)
+    except ValueError as exc:
+        raise typer.BadParameter(f"Configuration error: {exc}") from exc
+
+
+def resolve_report_format(value: ReportFormat | str | None) -> ReportFormat:
+    if value is None:
+        return ReportFormat.console
+
+    if isinstance(value, ReportFormat):
+        return value
+
+    try:
+        return ReportFormat(value)
+    except ValueError as exc:
+        valid_options = ", ".join(item.value for item in ReportFormat)
+        raise typer.BadParameter(
+            f"Invalid report format: {value}. "
+            f"Valid options are: {valid_options}."
+        ) from exc
+
+
+def resolve_profile_mode(value: ProfileMode | str | None) -> ProfileMode:
+    if value is None:
+        return ProfileMode.deep
+
+    if isinstance(value, ProfileMode):
+        return value
+
+    try:
+        return ProfileMode(value)
+    except ValueError as exc:
+        valid_options = ", ".join(item.value for item in ProfileMode)
+        raise typer.BadParameter(
+            f"Invalid profiling mode: {value}. "
+            f"Valid options are: {valid_options}."
+        ) from exc
+
+
 def resolve_output_path(
     output: str | None,
     output_dir: str | None,
@@ -92,6 +168,9 @@ def resolve_output_path(
     if output and output_dir:
         raise typer.BadParameter("Use either --output or --output-dir, not both.")
 
+    if report == ReportFormat.console:
+        return None
+
     if output:
         return output
 
@@ -99,6 +178,7 @@ def resolve_output_path(
         return str(Path(output_dir) / resolve_default_name(report))
 
     return resolve_default_name(report)
+
 
 def resolve_default_name(report: ReportFormat) -> str:
     default_names = {
@@ -110,6 +190,14 @@ def resolve_default_name(report: ReportFormat) -> str:
     }
 
     return default_names.get(report, "aniwa_report.txt")
+
+
+def ensure_output_parent(output: str | None) -> None:
+    if output is None:
+        return
+
+    Path(output).parent.mkdir(parents=True, exist_ok=True)
+
 
 def format_file_size(size_bytes: int) -> str:
     if size_bytes < 1024:
@@ -128,18 +216,26 @@ def build_command_used(
     path: str,
     report: ReportFormat,
     output: str | None,
+    output_dir: str | None,
     mode: ProfileMode,
     include: str | None,
     exclude: str | None,
     template: str,
+    config_file: str | None,
 ) -> str:
     command_parts = ["aniwa", path]
+
+    if config_file:
+        command_parts.extend(["--config", config_file])
 
     if report != ReportFormat.console:
         command_parts.extend(["--report", report.value])
 
     if output:
         command_parts.extend(["--output", output])
+
+    if output_dir:
+        command_parts.extend(["--output-dir", output_dir])
 
     if mode != ProfileMode.deep:
         command_parts.extend(["--mode", mode.value])
@@ -162,11 +258,13 @@ def build_profile_metadata(
     mode: ProfileMode,
     report: ReportFormat,
     output: str | None,
+    output_dir: str | None,
     template: str,
     sections: set[ReportSection],
     include: str | None,
     exclude: str | None,
     duration_seconds: float,
+    config_file: str | None,
 ) -> ProfileMetadata:
     include_sections = validate_sections(include)
     exclude_sections = validate_sections(exclude)
@@ -190,38 +288,30 @@ def build_profile_metadata(
             path=path,
             report=report,
             output=output,
+            output_dir=output_dir,
             mode=mode,
             include=include,
             exclude=exclude,
             template=template,
+            config_file=config_file,
         ),
     )
 
-def find_config_file():
-    for filename in ["aniwa.yaml", "aniwa.yml", "aniwa.toml", "aniwa.json"]:
-        if os.path.exists(filename):
-            return filename
-    return None
-
-def get_config():
-    file = find_config_file()
-    try:
-        return get_flattened_config(file) if file else {}
-    except ValueError as e:
-        typer.secho(f"Configuration Error: {e}", fg=typer.colors.RED, err=True)
-        raise typer.Exit(code=1)
 
 @app.command()
 def profile(
     path: str = typer.Argument(..., help="Path to dataset file."),
-    config_file: str = typer.Option(
-        None, "--config", "-c", help="Path to custom configuration file."
-    ),
-    report: ReportFormat = typer.Option(
+    config_file: str | None = typer.Option(
         None,
-        "--report", 
+        "--config",
+        "-c",
+        help="Path to configuration file.",
+    ),
+    report: ReportFormat | None = typer.Option(
+        None,
+        "--report",
         "-r",
-        help="Report format"
+        help="Report format.",
     ),
     output: str | None = typer.Option(
         None,
@@ -232,11 +322,10 @@ def profile(
     output_dir: str | None = typer.Option(
         None,
         "--output-dir",
-        "-od",
-        help="Output directory for reports. Ignored if --output is specified.",
+        help="Output directory for generated report files.",
     ),
-    mode: ProfileMode = typer.Option(
-        ProfileMode.deep,   
+    mode: ProfileMode | None = typer.Option(
+        None,
         "--mode",
         "-m",
         help="Profiling mode. Use 'fast' for lightweight checks or 'deep' for full profiling.",
@@ -253,43 +342,74 @@ def profile(
         "-e",
         help="Comma-separated list of report sections to exclude.",
     ),
-    template: str = typer.Option(
-        "default",
+    template: str | None = typer.Option(
+        None,
         "--template",
         "-t",
         help="Report template for HTML/PDF outputs. Options: default, clean, compact, enterprise, dark.",
     ),
 ):
-    
-    if config_file:
-        if not os.path.exists(config_file):
-            raise typer.BadParameter(f"Configuration file not found: {config_file}")
-        active_config = get_flattened_config(config_file)
-    else:
-        default_file = find_config_file()
-        active_config = get_flattened_config(default_file) if default_file else {}
-    
-    config_report = active_config.get("report")
-    if config_report and isinstance(config_report, str):
-        active_config["report"] = ReportFormat(config_report)
-        
-    config_mode = active_config.get("mode")
-    if config_mode and isinstance(config_mode, str):
-        active_config["mode"] = ProfileMode(config_mode)
-    
     """
     Profile a dataset.
     """
-    report = report or active_config.get("report", ReportFormat.console)
-    output = output or active_config.get("output", None)
-    mode = mode or active_config.get("mode", ProfileMode.deep)
-    include = include or active_config.get("include", None)
-    exclude = exclude or active_config.get("exclude", None)
-    template = template or active_config.get("template", "default")
-    sections = resolve_sections(include, exclude)
+    active_config = load_active_config(config_file)
 
+    resolved_report = resolve_report_format(
+        report if report is not None else active_config.get("report")
+    )
 
-    output = resolve_output_path(output, output_dir, report)
+    resolved_mode = resolve_profile_mode(
+        mode if mode is not None else active_config.get("mode")
+    )
+
+    resolved_template = (
+        template
+        if template is not None
+        else active_config.get("template", "default")
+    )
+
+    resolved_output = (
+        output
+        if output is not None
+        else active_config.get("output")
+    )
+
+    resolved_output_dir = (
+        output_dir
+        if output_dir is not None
+        else active_config.get("output_dir")
+    )
+
+    resolved_include = (
+        include
+        if include is not None
+        else active_config.get("include")
+    )
+
+    resolved_exclude = (
+        exclude
+        if exclude is not None
+        else active_config.get("exclude")
+    )
+
+    if include is not None:
+        resolved_exclude = None
+
+    if exclude is not None:
+        resolved_include = None
+
+    sections = resolve_sections(
+        resolved_include,
+        resolved_exclude,
+    )
+
+    final_output = resolve_output_path(
+        output=resolved_output,
+        output_dir=resolved_output_dir,
+        report=resolved_report,
+    )
+
+    ensure_output_parent(final_output)
 
     dataset_path = Path(path)
 
@@ -299,9 +419,10 @@ def profile(
     start_time = time.perf_counter()
 
     df = read_dataset(path)
+
     dataset_profile = profile_dataframe(
         df,
-        mode=mode.value,
+        mode=resolved_mode.value,
         sections=sections,
     )
 
@@ -310,66 +431,65 @@ def profile(
     dataset_profile.metadata = build_profile_metadata(
         dataset_path=dataset_path,
         path=path,
-        mode=mode,
-        report=report,
-        output=output,
-        template=template,
+        mode=resolved_mode,
+        report=resolved_report,
+        output=final_output if resolved_output else None,
+        output_dir=resolved_output_dir,
+        template=resolved_template,
         sections=sections,
-        include=include,
-        exclude=exclude,
+        include=resolved_include,
+        exclude=resolved_exclude,
         duration_seconds=duration_seconds,
+        config_file=config_file,
     )
 
-    if report == ReportFormat.console:
+    if resolved_report == ReportFormat.console:
         render_console_report(dataset_profile)
         return
 
-    if report == ReportFormat.json:
-        json_output = render_json_report(dataset_profile, output)
+    if resolved_report == ReportFormat.json:
+        json_output = render_json_report(dataset_profile, final_output)
 
-        if output:
-            typer.echo(f"JSON report written to {output}")
+        if final_output:
+            typer.echo(f"JSON report written to {final_output}")
         else:
             typer.echo(json_output)
 
         return
 
-    if report == ReportFormat.html:
-
+    if resolved_report == ReportFormat.html:
         try:
-            render_html_report(dataset_profile, output, template=template)
+            render_html_report(dataset_profile, final_output, template=resolved_template)
         except ValueError as exc:
             raise typer.BadParameter(str(exc)) from exc
 
-        typer.echo(f"HTML report written to {output}")
+        typer.echo(f"HTML report written to {final_output}")
         return
 
-    if report == ReportFormat.excel:
-
+    if resolved_report == ReportFormat.excel:
         try:
-            render_excel_report(dataset_profile, output)
+            render_excel_report(dataset_profile, final_output)
         except ValueError as exc:
             raise typer.BadParameter(str(exc)) from exc
 
-        typer.echo(f"Excel report written to {output}")
+        typer.echo(f"Excel report written to {final_output}")
         return
 
-    if report == ReportFormat.markdown:
-        markdown_output = render_markdown_report(dataset_profile, output)
+    if resolved_report == ReportFormat.markdown:
+        markdown_output = render_markdown_report(dataset_profile, final_output)
 
-        if output:
-            typer.echo(f"Markdown report written to {output}")
+        if final_output:
+            typer.echo(f"Markdown report written to {final_output}")
         else:
             typer.echo(markdown_output)
 
         return
 
-    if report == ReportFormat.pdf:
-
+    if resolved_report == ReportFormat.pdf:
         try:
-            render_pdf_report(dataset_profile, output, template=template)
+            render_pdf_report(dataset_profile, final_output, template=resolved_template)
         except ValueError as exc:
             raise typer.BadParameter(str(exc)) from exc
 
-        typer.echo(f"PDF report written to {output}")
+        typer.echo(f"PDF report written to {final_output}")
         return

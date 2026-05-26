@@ -1,7 +1,7 @@
 mode: deep
 
 report:
-  format: console
+  format: html
   template: dark
   output_dir: reports/
 
