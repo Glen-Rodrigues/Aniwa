@@ -2,7 +2,7 @@
 
 <p align="left">
   <img
-    src="https://raw.githubusercontent.com/ReginaldErzoah/Aniwa/main/assets/aniwa-logo.png"
+    src="https://raw.githubusercontent.com/ReginaldErzoah/Aniwa/main/docs/assets/aniwa-logo.png"
     width="300"
     alt="Aniwa Logo"
   >
