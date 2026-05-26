@@ -6,6 +6,7 @@ from pathlib import Path
 
 import polars as pl
 import typer
+import os
 
 from aniwa import __version__
 from aniwa.core.profiler import profile_dataframe
@@ -18,6 +19,7 @@ from aniwa.reports.html_report import render_html_report
 from aniwa.reports.json_report import render_json_report
 from aniwa.reports.markdown_report import render_markdown_report
 from aniwa.reports.pdf_report import render_pdf_report
+from aniwa.config import get_flattened_config
 
 
 app = typer.Typer(help="Aniwa - Universal dataset profiling and intelligence.")
@@ -195,15 +197,31 @@ def build_profile_metadata(
         ),
     )
 
+def find_config_file():
+    for filename in ["aniwa.yaml", "aniwa.yml", "aniwa.toml", "aniwa.json"]:
+        if os.path.exists(filename):
+            return filename
+    return None
+
+def get_config():
+    file = find_config_file()
+    try:
+        return get_flattened_config(file) if file else {}
+    except ValueError as e:
+        typer.secho(f"Configuration Error: {e}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1)
 
 @app.command()
 def profile(
     path: str = typer.Argument(..., help="Path to dataset file."),
+    config_file: str = typer.Option(
+        None, "--config", "-c", help="Path to custom configuration file."
+    ),
     report: ReportFormat = typer.Option(
-        ReportFormat.console,
-        "--report",
+        None,
+        "--report", 
         "-r",
-        help="Report format.",
+        help="Report format"
     ),
     output: str | None = typer.Option(
         None,
@@ -218,7 +236,7 @@ def profile(
         help="Output directory for reports. Ignored if --output is specified.",
     ),
     mode: ProfileMode = typer.Option(
-        ProfileMode.deep,
+        ProfileMode.deep,   
         "--mode",
         "-m",
         help="Profiling mode. Use 'fast' for lightweight checks or 'deep' for full profiling.",
@@ -242,10 +260,34 @@ def profile(
         help="Report template for HTML/PDF outputs. Options: default, clean, compact, enterprise, dark.",
     ),
 ):
+    
+    if config_file:
+        if not os.path.exists(config_file):
+            raise typer.BadParameter(f"Configuration file not found: {config_file}")
+        active_config = get_flattened_config(config_file)
+    else:
+        default_file = find_config_file()
+        active_config = get_flattened_config(default_file) if default_file else {}
+    
+    config_report = active_config.get("report")
+    if config_report and isinstance(config_report, str):
+        active_config["report"] = ReportFormat(config_report)
+        
+    config_mode = active_config.get("mode")
+    if config_mode and isinstance(config_mode, str):
+        active_config["mode"] = ProfileMode(config_mode)
+    
     """
     Profile a dataset.
     """
+    report = report or active_config.get("report", ReportFormat.console)
+    output = output or active_config.get("output", None)
+    mode = mode or active_config.get("mode", ProfileMode.deep)
+    include = include or active_config.get("include", None)
+    exclude = exclude or active_config.get("exclude", None)
+    template = template or active_config.get("template", "default")
     sections = resolve_sections(include, exclude)
+
 
     output = resolve_output_path(output, output_dir, report)
 
