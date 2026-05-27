@@ -420,7 +420,7 @@ Aniwa/
 
 # Roadmap
 
-## v0.1.x — Foundation
+## v0.1.x - Foundation
 
 - universal dataset profiling
 - reporting systems
@@ -428,7 +428,7 @@ Aniwa/
 - modular architecture
 - developer-first UX
 
-## v0.2.x — Intelligence
+## v0.2.x - Intelligence
 
 Planned features:
 
@@ -437,7 +437,7 @@ Planned features:
 - semantic profiling
 - improved insights
 
-## v0.3.x — Universal Connectivity
+## v0.3.x - Universal Connectivity
 
 Planned features:
 
@@ -448,7 +448,7 @@ Planned features:
 - profiling history
 - snapshot management
 
-## v0.4.x — Extensibility
+## v0.4.x - Extensibility
 
 Planned features:
 
@@ -456,7 +456,7 @@ Planned features:
 - custom profiling modules
 - community extensions
 
-## v0.5.x — AI Intelligence
+## v0.5.x - AI Intelligence
 
 Planned features:
 
