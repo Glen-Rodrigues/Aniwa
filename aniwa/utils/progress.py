@@ -4,18 +4,21 @@ from contextlib import contextmanager
 from time import perf_counter
 from typing import Optional
 from rich.console import Console
-from rich.status import Status
+from rich.progress import (
+    Progress, 
+    SpinnerColumn, 
+    TextColumn, 
+    BarColumn, 
+    TimeElapsedColumn,
+    TimeRemainingColumn
+)
 
 
 console = Console()
 
 
 class ProgressTracker:
-    """Central progress tracking for profiling operations.
-    
-    Provides context managers for tracking execution time and progress
-    of various profiling stages.
-    """
+    """Central progress tracking for profiling operations."""
     
     def __init__(self, verbose: bool = False):
         """Initialize progress tracker.
@@ -25,55 +28,118 @@ class ProgressTracker:
         """
         self.verbose = verbose
         self.timings = {}
+        self._current_progress = None
+        self._current_task = None
     
     @contextmanager
     def stage(self, name: str, total_steps: Optional[int] = None):
-        """Context manager for profiling stages with timing.
+        """Context manager for profiling stages with visual progress bar.
         
         Args:
             name: Name of the stage for display
-            total_steps: Optional - not used in this version, kept for API compatibility
+            total_steps: If provided, show progress bar with this many steps
         
         Yields:
-            None or a callback function (kept for API compatibility)
+            Optional callback function to advance progress bar
         """
         start = perf_counter()
         
         if self.verbose:
-            console.print(f"[bold blue] {name}...[/bold blue]")
-            try:
-                # Yield a dummy callback for API compatibility with profiler.py
-                def dummy_callback(advance: int = 1):
-                    pass
-                yield dummy_callback
-            finally:
-                elapsed = perf_counter() - start
-                self.timings[name] = elapsed
-                # Format duration appropriately
-                if elapsed < 0.01:
-                    time_str = f"{elapsed*1000:.2f}ms"
-                else:
-                    time_str = f"{elapsed:.2f}s"
-                console.print(f"[dim]   Completed in {time_str}[/dim]")
+            if total_steps and total_steps > 0:
+                # Show progress bar for multi-step operations
+                with Progress(
+                    TextColumn("[bold blue]{task.description}"),
+                    BarColumn(bar_width=40),
+                    TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+                    console=console,
+                    transient=False,
+                ) as progress:
+                    task = progress.add_task(
+                        f"{name}",
+                        total=total_steps
+                    )
+                    
+                    def progress_callback(advance: int = 1):
+                        progress.advance(task, advance)
+                    
+                    try:
+                        yield progress_callback
+                    finally:
+                        elapsed = perf_counter() - start
+                        self.timings[name] = elapsed
+                        # Clear the line and show completion
+                        console.print(f"[dim]   {name} completed in {self._format_time(elapsed)}[/dim]")
+            else:
+                # Show indeterminate spinner for operations without steps
+                with Progress(
+                    SpinnerColumn(),
+                    TextColumn(f"[progress.description][bold blue]{name}...[/bold blue]"),
+                    TimeElapsedColumn(),
+                    console=console,
+                    transient=True,
+                ) as progress:
+                    task = progress.add_task("", total=None)
+                    try:
+                        yield None
+                    finally:
+                        elapsed = perf_counter() - start
+                        self.timings[name] = elapsed
+                        console.print(f"[dim]   {name} completed in {self._format_time(elapsed)}[/dim]")
         else:
+            # Non-verbose mode - just track timing
             try:
                 yield None
             finally:
                 elapsed = perf_counter() - start
                 self.timings[name] = elapsed
     
+    def _format_time(self, seconds: float) -> str:
+        """Format time duration appropriately."""
+        if seconds < 0.001:
+            return f"{seconds*1000000:.0f}µs"
+        elif seconds < 0.01:
+            return f"{seconds*1000:.2f}ms"
+        elif seconds < 1:
+            return f"{seconds*1000:.0f}ms"
+        else:
+            return f"{seconds:.2f}s"
+    
     def show_timing_summary(self):
         """Display all timing information if verbose mode is enabled."""
         if self.verbose and self.timings:
             console.print("\n[bold cyan]Timing Summary:[/bold cyan]")
+            
+            # Create a table for better visualization
+            from rich.table import Table
+            table = Table(show_header=True, header_style="bold cyan", box=None)
+            table.add_column("Stage", style="cyan")
+            table.add_column("Duration", justify="right", style="green")
+            
             for stage, duration in self.timings.items():
-                # Format duration with appropriate precision
-                if duration < 0.01:
-                    time_str = f"{duration*1000:.2f}ms"
-                else:
-                    time_str = f"{duration:.2f}s"
-                console.print(f"  {stage}: {time_str}")
+                table.add_row(stage, self._format_time(duration))
+            
+            console.print(table)
     
     def reset(self):
         """Reset all timing data."""
         self.timings = {}
+
+
+# Helper context manager for simple operations
+@contextmanager
+def show_progress(message: str, verbose: bool = True):
+    """Simple progress indicator for a single operation."""
+    if verbose:
+        console.print(f"[bold blue] {message}...[/bold blue]")
+        start = perf_counter()
+        try:
+            yield
+        finally:
+            elapsed = perf_counter() - start
+            if elapsed < 0.01:
+                time_str = f"{elapsed*1000:.2f}ms"
+            else:
+                time_str = f"{elapsed:.2f}s"
+            console.print(f"[dim]   Completed in {time_str}[/dim]")
+    else:
+        yield
