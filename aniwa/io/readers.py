@@ -4,6 +4,20 @@ import polars as pl
 
 
 def read_dataset(path: str) -> pl.DataFrame:
+    """
+    Read a dataset from file into a Polars DataFrame.
+
+    Supports: .csv, .tsv, .xlsx, .xls, .json, .jsonl, .parquet, .pq
+
+    Args:
+        path: Path to the dataset file.
+
+    Returns:
+        Polars DataFrame containing the dataset.
+
+    Raises:
+        ValueError: If the file type is not supported.
+    """
     file_path = Path(path)
     suffix = file_path.suffix.lower()
 
