@@ -411,6 +411,7 @@ Aniwa/
 │
 ├── README.md
 ├── CONTRIBUTING.md
+├── SPRINT.md
 ├── mkdocs.yml
 ├── pyproject.toml
 └── requirements.txt
@@ -501,6 +502,7 @@ Contributions are welcome.
 See:
 
 - CONTRIBUTING.md
+- SPRINT.md
 - docs/developer-guide/
 
 for:
