@@ -701,7 +701,7 @@ def profile(
         # Only show essential info in quiet mode
         console.print(f"{path}")
     else:
-        console.print(f"\n[bold green]✓ Profiling complete for {path}[/bold green]")
+        console.print(f"\n[bold green] Profiling complete for {path}[/bold green]")
         if final_output:
             console.print(f"[dim]Report saved to: {final_output}[/dim]")
     

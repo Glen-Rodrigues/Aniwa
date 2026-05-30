@@ -39,29 +39,29 @@ class AniwaLogger:
         self._verbose_enabled = verbosity in [VerbosityLevel.VERBOSE, VerbosityLevel.DEBUG]
         self._quiet_enabled = verbosity == VerbosityLevel.QUIET
     
-    def info(self, message: str, icon: str = "→"):
+    def info(self, message: str):
         """Show informational message (normal and above)."""
         if not self._quiet_enabled:
-            self.console.print(f"[bold blue]{icon}[/bold blue] {message}")
+            self.console.print(f"[bold blue]{message}[/bold blue]")
     
-    def success(self, message: str, icon: str = "✓"):
+    def success(self, message: str):
         """Show success message (normal and above)."""
         if not self._quiet_enabled:
-            self.console.print(f"[bold green]{icon}[/bold green] {message}")
+            self.console.print(f"[bold green]{message}[/bold green]")
     
-    def warning(self, message: str, icon: str = "⚠"):
+    def warning(self, message: str):
         """Show warning message (normal and above)."""
         if not self._quiet_enabled:
-            self.console.print(f"[bold yellow]{icon}[/bold yellow] {message}")
+            self.console.print(f"[bold yellow]{message}[/bold yellow]")
     
-    def error(self, message: str, icon: str = "✗"):
+    def error(self, message: str):
         """Show error message (always shown)."""
-        self.console.print(f"[bold red]{icon}[/bold red] {message}")
+        self.console.print(f"[bold red]{message}[/bold red]")
     
-    def verbose(self, message: str, icon: str = "→"):
+    def verbose(self, message: str):
         """Show verbose message (verbose or debug mode)."""
         if self._verbose_enabled:
-            self.console.print(f"[dim]{icon}[/dim] {message}")
+            self.console.print(f"[dim]{message}[/dim]")
     
     def debug(self, message: str, data: Optional[Any] = None):
         """Show debug message with optional data (debug mode only)."""
@@ -94,14 +94,14 @@ class AniwaLogger:
         class StageContext:
             def __enter__(self_ctx):
                 if level == VerbosityLevel.VERBOSE and self._verbose_enabled:
-                    self.console.print(f"[bold blue]→[/bold blue] {name}...")
+                    self.console.print(f"[bold blue]{name}...[/bold blue]")
                 elif level == VerbosityLevel.DEBUG and self._debug_enabled:
                     self.console.print(f"[dim cyan][DEBUG][/dim cyan] Entering stage: {name}")
                 return self_ctx
             
             def __exit__(self_ctx, *args):
                 if level == VerbosityLevel.VERBOSE and self._verbose_enabled:
-                    self.console.print(f"[dim]  ✓ {name} complete[/dim]")
+                    self.console.print(f"[dim]{name} complete[/dim]")
                 elif level == VerbosityLevel.DEBUG and self._debug_enabled:
                     self.console.print(f"[dim cyan][DEBUG][/dim cyan] Exiting stage: {name}")
         
@@ -118,7 +118,7 @@ class AniwaLogger:
                 time_str = f"{duration*1000:.0f}ms"
             else:
                 time_str = f"{duration:.2f}s"
-            self.verbose(f"{operation} completed in {time_str}", icon="⏱")
+            self.verbose(f"{operation} completed in {time_str}")
 
 
 # Global logger instance (will be configured in CLI)
@@ -139,29 +139,29 @@ def configure_logger(verbosity: VerbosityLevel):
     _logger = AniwaLogger(verbosity)
 
 
-def log_info(message: str, icon: str = "→"):
+def log_info(message: str):
     """Log informational message."""
-    get_logger().info(message, icon)
+    get_logger().info(message)
 
 
-def log_success(message: str, icon: str = "✓"):
+def log_success(message: str):
     """Log success message."""
-    get_logger().success(message, icon)
+    get_logger().success(message)
 
 
-def log_warning(message: str, icon: str = "⚠"):
+def log_warning(message: str):
     """Log warning message."""
-    get_logger().warning(message, icon)
+    get_logger().warning(message)
 
 
-def log_error(message: str, icon: str = "✗"):
+def log_error(message: str):
     """Log error message."""
-    get_logger().error(message, icon)
+    get_logger().error(message)
 
 
-def log_verbose(message: str, icon: str = "→"):
+def log_verbose(message: str):
     """Log verbose message."""
-    get_logger().verbose(message, icon)
+    get_logger().verbose(message)
 
 
 def log_debug(message: str, data: Any = None):
