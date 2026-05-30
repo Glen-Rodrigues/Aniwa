@@ -92,5 +92,3 @@ git rebase --abort   # Go back to before rebase
 | Push | `git push origin my-branch` |
 | Rebase | `git fetch upstream && git rebase upstream/main && git push --force` |
 
----
-
