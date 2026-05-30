@@ -443,7 +443,7 @@
     {% endif %}
     {% endif %}
 
-    {% if charts_enabled and (profile.columns or (profile.summary and profile.quality)) %}
+    {% if charts_enabled %}
     <section>
         <h2>Charts</h2>
 
@@ -470,15 +470,7 @@
     </section>
 
     <script id="aniwa-clean-chart-data" type="application/json">
-{
-    "columns": {{ (profile.columns | map(attribute="name") | list if profile.columns else []) | tojson | safe }},
-    "nullPercents": {{ (profile.columns | map(attribute="null_percent") | list if profile.columns else []) | tojson | safe }},
-    "uniqueCounts": {{ (profile.columns | map(attribute="unique_count") | list if profile.columns else []) | tojson | safe }},
-    "duplicateRows": {{ profile.quality.duplicate_rows if profile.quality else 0 }},
-    "uniqueRows": {{ profile.summary.rows - profile.quality.duplicate_rows if profile.summary and profile.quality else 0 }},
-    "hasColumnCharts": {{ true if profile.columns else false }},
-    "hasDuplicateChart": {{ true if profile.summary and profile.quality else false }}
-}
+{{ chart_data_json | safe }}
     </script>
 
     <script>

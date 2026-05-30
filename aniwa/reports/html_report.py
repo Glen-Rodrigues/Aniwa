@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
@@ -38,7 +39,15 @@ def render_html_report(
         AVAILABLE_TEMPLATES[template]
     )
 
-    html = html_template.render(profile=profile)
+    # Prepare chart data for JavaScript
+    chart_data = _prepare_chart_data(profile)
+    chart_data_json = json.dumps(chart_data)
+
+    # Render template with both profile and chart_data
+    html = html_template.render(
+        profile=profile,
+        chart_data_json=chart_data_json,
+    )
 
     if output:
         output_path = Path(output)
@@ -54,3 +63,40 @@ def render_html_report(
         )
 
     return html
+
+
+def _prepare_chart_data(profile: DatasetProfile) -> dict:
+    """Prepare chart data for JavaScript rendering."""
+    
+    # Get column data
+    columns = []
+    null_percents = []
+    unique_counts = []
+    
+    if profile.columns:
+        for col in profile.columns:
+            columns.append(col.name)
+            null_percents.append(round(col.null_percent, 2))
+            unique_counts.append(col.unique_count)
+    
+    # Get duplicate data
+    duplicate_rows = 0
+    unique_rows = 0
+    
+    if profile.quality and profile.summary:
+        duplicate_rows = profile.quality.duplicate_rows
+        unique_rows = profile.summary.rows - duplicate_rows
+    
+    # Check if we have data to show charts
+    has_column_charts = len(columns) > 0
+    has_duplicate_chart = profile.quality is not None and duplicate_rows > 0
+    
+    return {
+        "columns": columns,
+        "nullPercents": null_percents,
+        "uniqueCounts": unique_counts,
+        "duplicateRows": duplicate_rows,
+        "uniqueRows": unique_rows,
+        "hasColumnCharts": has_column_charts,
+        "hasDuplicateChart": has_duplicate_chart,
+    }

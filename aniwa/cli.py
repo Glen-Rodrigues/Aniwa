@@ -38,10 +38,8 @@ def version_callback(value: bool):
         raise typer.Exit()
 
 
-@app.callback(invoke_without_command=True)
+@app.callback()
 def main(
-    ctx: typer.Context,
-    path: str = typer.Argument(None, help="Path to dataset file (shortcut for 'profile' command)"),
     version: bool = typer.Option(
         False,
         "--version",
@@ -54,24 +52,12 @@ def main(
     """
     Aniwa - Universal dataset profiling and intelligence.
     
-    If you provide a file path without a command, it will run the profile command automatically.
+    Usage:
+        aniwa profile <file>              Profile a dataset
+        aniwa profile <file> --report html  Generate HTML report
+        aniwa list-presets                List available presets
     """
-    # If no subcommand is called but a path was provided, run profile
-    if ctx.invoked_subcommand is None and path:
-        # Call profile with only path, everything else uses defaults
-        profile(
-            path=path,
-            config_file=None,
-            preset=None,
-            report=None,
-            output=None,
-            output_dir=None,
-            mode=None,
-            include=None,
-            exclude=None,
-            template=None,
-            verbosity=VerbosityLevel.NORMAL,
-        )
+    pass
 
 
 CONFIG_FILE_NAMES = (
@@ -274,7 +260,7 @@ def build_command_used(
     verbosity: VerbosityLevel,
     preset: Optional[str] = None,
 ) -> str:
-    command_parts = ["aniwa", path]
+    command_parts = ["aniwa", "profile", path]
 
     if preset:
         command_parts.extend(["--preset", preset])
@@ -425,6 +411,13 @@ def profile(
 ):
     """
     Profile a dataset.
+    
+    Examples:
+        aniwa profile data.csv
+        aniwa profile data.csv --report html
+        aniwa profile data.csv --report json --output results.json
+        aniwa profile data.csv --mode fast --verbosity quiet
+        aniwa profile data.csv --preset enterprise
     """
     # Configure logging first thing
     configure_logger(verbosity)
