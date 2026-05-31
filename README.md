@@ -515,6 +515,17 @@ for:
 
 ---
 
+# Support
+
+If you find this project useful:
+
+- star the repository
+- Share repo with friends
+- Contribute to making this project better solving open issues
+- Recommendations can also be sent to maintainer
+
+---
+
 # License
 
 Aniwa is released under the MIT License.
