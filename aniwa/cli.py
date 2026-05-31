@@ -554,9 +554,15 @@ def profile(
     dataset_path = Path(path)
 
     if not dataset_path.exists():
-        log_error(f"File does not exist: {path}")
-        raise typer.BadParameter(f"File does not exist: {path}")
-
+        message = f"File '{path}' not found."
+    
+        # Check if directory exists but file doesn't
+        if dataset_path.parent.exists():
+            message += " Check the file name."
+        else:
+            message += " Check the path or file name."
+        log_error(message)
+        raise typer.BadParameter(message)
     # Determine if we should show verbose progress (verbose or debug mode)
     show_verbose_progress = verbosity in [VerbosityLevel.VERBOSE, VerbosityLevel.DEBUG]
     
