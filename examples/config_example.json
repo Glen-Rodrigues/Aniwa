@@ -1,0 +1,12 @@
+{
+    "mode": "deep",
+    "report": {
+        "format": "html",
+        "template": "dark",
+        "output_dir": "reports/"
+    },
+    "sections": {
+        "include": ["summary", "schema", "statistics", "insights"]
+    },
+    "verbosity": "normal"
+}
