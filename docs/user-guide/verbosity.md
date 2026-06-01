@@ -32,7 +32,7 @@ Aniwa currently supports:
 Verbosity levels increase in detail:
 
 ```text
-quiet
+- quiet
 - normal
 - verbose
 - debug
