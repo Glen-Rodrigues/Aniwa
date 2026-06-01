@@ -37,10 +37,6 @@ def load_config(
 
     try:
         return _read_config(path, suffix)
-
-    except ValueError:
-        raise
-
     except Exception as exc:
         raise ValueError(f"Error parsing config file '{file_path}': {exc}") from exc
 
@@ -96,8 +92,22 @@ def _ensure_dict(
 def get_flattened_config(
     file_path: str,
 ) -> dict[str, Any]:
-    raw = load_config(file_path)
-
+    """Load and flatten a configuration file.
+    
+    Args:
+        file_path: Path to the configuration file
+    
+    Returns:
+        Flattened configuration dictionary, or empty dict if file doesn't exist
+    """
+    try:
+        raw = load_config(file_path)
+    except ValueError as e:
+        # If file doesn't exist, return empty dict
+        if "not found" in str(e).lower():
+            return {}
+        raise
+    
     if not raw:
         return {}
 

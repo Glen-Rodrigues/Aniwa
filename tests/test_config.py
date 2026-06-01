@@ -102,6 +102,7 @@ def test_load_config_invalid_json(tmp_path):
     config_file = tmp_path / "aniwa.json"
     config_file.write_text('{"mode": "deep"', encoding="utf-8")
     
+    # JSONDecodeError gets wrapped in ValueError with our message
     with pytest.raises(ValueError, match="Error parsing config file"):
         load_config(str(config_file))
 
@@ -112,6 +113,7 @@ def test_load_config_valid_toml(tmp_path):
     config_file.write_text(
         """
 mode = "deep"
+verbosity = "debug"
 
 [report]
 format = "html"
@@ -119,18 +121,16 @@ template = "dark"
 
 [sections]
 include = ["summary", "schema"]
-
-verbosity = "debug"
 """,
         encoding="utf-8",
     )
     
     result = load_config(str(config_file))
     assert result["mode"] == "deep"
+    assert result["verbosity"] == "debug"
     assert result["report"]["format"] == "html"
     assert result["report"]["template"] == "dark"
     assert result["sections"]["include"] == ["summary", "schema"]
-    assert result["verbosity"] == "debug"
 
 
 def test_get_flattened_config_missing_file():
