@@ -33,9 +33,9 @@ Verbosity levels increase in detail:
 
 ```text
 quiet
-→ normal
-→ verbose
-→ debug
+- normal
+- verbose
+- debug
 ```
 
 ---
@@ -259,8 +259,8 @@ Verbosity resolution follows:
 
 ```text
 CLI argument
-→ config value
-→ default value
+- config value
+- default value
 ```
 
 Default verbosity:
