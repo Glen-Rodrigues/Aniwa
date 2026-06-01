@@ -27,19 +27,6 @@ Aniwa currently supports:
 
 ---
 
-# Available Levels
-
-Verbosity levels increase in detail:
-
-```text
-- quiet
-- normal
-- verbose
-- debug
-```
-
----
-
 # Quiet
 
 Quiet mode minimizes console output.
