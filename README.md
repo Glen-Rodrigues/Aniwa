@@ -429,7 +429,20 @@ Aniwa/
 - modular architecture
 - developer-first UX
 
-## v0.2.x - Intelligence
+## v0.2.x - Better User Experience
+
+Planned features:
+
+- Better HTML with charts.
+- Better report templates.
+- Report modes and presets.
+- Better output management.
+- Metadata
+- Incldue & exclude sections.
+- Config file supports (yml, json & toml).
+- Improved documentation.
+
+## v0.3.x - Intelligence
 
 Planned features:
 
@@ -438,7 +451,7 @@ Planned features:
 - semantic profiling
 - improved insights
 
-## v0.3.x - Universal Connectivity
+## v0.4.x - Universal Connectivity
 
 Planned features:
 
@@ -449,7 +462,7 @@ Planned features:
 - profiling history
 - snapshot management
 
-## v0.4.x - Extensibility
+## v0.5.x - Extensibility
 
 Planned features:
 
@@ -457,7 +470,7 @@ Planned features:
 - custom profiling modules
 - community extensions
 
-## v0.5.x - AI Intelligence
+## v0.6.x - AI Intelligence
 
 Planned features:
 
