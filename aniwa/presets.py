@@ -16,7 +16,6 @@ class Preset:
     report_format: Optional[str] = None
     template: Optional[str] = None
     include_sections: Optional[Set[ReportSection]] = None
-    exclude_sections: Optional[Set[ReportSection]] = None
     verbosity: Optional[str] = None
     
     def to_dict(self) -> Dict[str, Any]:
@@ -31,8 +30,6 @@ class Preset:
             result["template"] = self.template
         if self.include_sections:
             result["include"] = ",".join(s.value for s in self.include_sections)
-        if self.exclude_sections:
-            result["exclude"] = ",".join(s.value for s in self.exclude_sections)
         if self.verbosity:
             result["verbosity"] = self.verbosity
         
@@ -50,11 +47,6 @@ BUILTIN_PRESETS: Dict[str, Preset] = {
             ReportSection.schema,
             ReportSection.quality,
         },
-        exclude_sections={
-            ReportSection.statistics,
-            ReportSection.insights,
-            ReportSection.charts,
-        },
     ),
     
     "standard": Preset(
@@ -67,9 +59,6 @@ BUILTIN_PRESETS: Dict[str, Preset] = {
             ReportSection.quality,
             ReportSection.statistics,
             ReportSection.insights,
-        },
-        exclude_sections={
-            ReportSection.charts,
         },
     ),
     
@@ -158,7 +147,6 @@ def apply_preset(
         "report_format": preset.report_format,
         "template": preset.template,
         "include_sections": [s.value for s in preset.include_sections] if preset.include_sections else None,
-        "exclude_sections": [s.value for s in preset.exclude_sections] if preset.exclude_sections else None,
         "verbosity": preset.verbosity,
     })
     
@@ -170,11 +158,6 @@ def apply_preset(
         if value is not None:
             result[key] = value
             log_debug(f"CLI override: {key} = {value}")
-    
-    # Handle special case: if both include and exclude are present, exclude wins
-    if "include" in result and "exclude" in result:
-        log_debug("Both include and exclude present, excluding exclude sections from include")
-        # This will be handled by resolve_sections in cli.py
     
     return result
 

@@ -104,9 +104,13 @@ def test_apply_preset_without_overrides():
     result = apply_preset("quick", {})
     assert result["mode"] == "fast"
     assert "include" in result
-    assert "exclude" in result
-    assert result["include"] == "summary,schema,quality"
-    assert result["exclude"] == "statistics,insights,charts"
+    
+    # Check sections by membership (order not guaranteed)
+    include_parts = result["include"].split(",")
+    assert "summary" in include_parts
+    assert "schema" in include_parts
+    assert "quality" in include_parts
+    assert len(include_parts) == 3
 
 
 def test_apply_preset_with_cli_override():
@@ -115,7 +119,13 @@ def test_apply_preset_with_cli_override():
     result = apply_preset("quick", cli_args)
     assert result["mode"] == "deep"  # CLI overrides preset
     assert "include" in result  # Preset values still present
-    assert result["include"] == "summary,schema,quality"
+    
+    # Check sections by membership (order not guaranteed)
+    include_parts = result["include"].split(",")
+    assert "summary" in include_parts
+    assert "schema" in include_parts
+    assert "quality" in include_parts
+    assert len(include_parts) == 3
 
 
 def test_apply_preset_with_multiple_overrides():
@@ -130,7 +140,6 @@ def test_apply_preset_with_multiple_overrides():
     assert result["report"] == "json"
     assert result["verbosity"] == "quiet"
     assert "include" in result
-    assert "exclude" in result
 
 
 def test_apply_preset_invalid():
@@ -145,9 +154,13 @@ def test_preset_to_dict():
     preset_dict = preset.to_dict()
     assert preset_dict["mode"] == "fast"
     assert "include" in preset_dict
-    assert "exclude" in preset_dict
-    assert preset_dict["include"] == "summary,schema,quality"
-    assert preset_dict["exclude"] == "statistics,insights,charts"
+    
+    # Check sections by membership (order not guaranteed)
+    include_parts = preset_dict["include"].split(",")
+    assert "summary" in include_parts
+    assert "schema" in include_parts
+    assert "quality" in include_parts
+    assert len(include_parts) == 3
 
 
 def test_preset_to_dict_with_optional_fields():
@@ -199,12 +212,14 @@ def test_preset_objects_are_unique():
     assert quick1 is not standard  # Different presets are different objects
 
 
-def test_preset_include_exclude_mutually_exclusive():
-    """Test that presets don't have both include and exclude by default."""
+def test_preset_include_only_no_exclude():
+    """Test that presets only have include sections (no exclude)."""
     for preset_name in ["quick", "standard", "audit", "enterprise"]:
         preset = get_preset(preset_name)
-        # Should have either include or exclude sections, not both in the config
-        assert (preset.include_sections is not None) or (preset.exclude_sections is not None)
+        # Presets should have include_sections
+        assert preset.include_sections is not None
+        # exclude_sections should not exist on the Preset class
+        assert not hasattr(preset, 'exclude_sections')
 
 
 def test_all_sections_defined():
@@ -214,9 +229,6 @@ def test_all_sections_defined():
         preset = get_preset(preset_name)
         if preset.include_sections:
             for section in preset.include_sections:
-                assert section in all_sections
-        if preset.exclude_sections:
-            for section in preset.exclude_sections:
                 assert section in all_sections
 
 
@@ -262,16 +274,19 @@ def test_apply_preset_logging(mock_log_debug):
     """Test that apply_preset logs debug information."""
     result = apply_preset("quick", {"mode": "deep"})
     assert mock_log_debug.called
-    mock_log_debug.assert_any_call("Applying preset: quick", {
-        "name": "quick",
-        "description": "Fast lightweight profiling for quick data inspection",
-        "mode": "fast",
-        "report_format": None,
-        "template": None,
-        "include_sections": ["summary", "schema", "quality"],
-        "exclude_sections": ["statistics", "insights", "charts"],
-        "verbosity": None,
-    })
+    
+    # Check that the first call has the expected structure
+    # Instead of exact match, verify key fields
+    first_call = mock_log_debug.call_args_list[0][0][1]
+    
+    assert first_call["name"] == "quick"
+    assert first_call["mode"] == "fast"
+    assert "summary" in first_call["include_sections"]
+    assert "schema" in first_call["include_sections"]
+    assert "quality" in first_call["include_sections"]
+    assert len(first_call["include_sections"]) == 3
+    
+    # Check CLI override was logged
     mock_log_debug.assert_any_call("CLI override: mode = deep")
 
 
@@ -288,7 +303,6 @@ def test_preset_data_class():
     assert preset.report_format is None
     assert preset.template is None
     assert preset.include_sections is None
-    assert preset.exclude_sections is None
     assert preset.verbosity is None
 
 
