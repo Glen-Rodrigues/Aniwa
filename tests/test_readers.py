@@ -1,4 +1,7 @@
+import pytest
+import tempfile
 import polars as pl
+from pathlib import Path
 
 from aniwa.io.readers import read_dataset
 
@@ -114,3 +117,87 @@ def test_read_jsonl(tmp_path):
 
     assert df.shape == (2, 3)
     assert df.columns == ["id", "event", "country"]
+
+def test_empty_csv_file(caplog):
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+        f.write("")
+        f.close()
+        
+        temp_path = Path(f.name)
+        
+        try:
+            with caplog.at_level("INFO"):
+                df = read_dataset(str(temp_path))
+            assert df is not None
+            assert isinstance(df, pl.DataFrame)
+            assert df.height == 0
+            assert "is empty" in caplog.text
+            
+        finally:
+            temp_path.unlink()
+
+def test_empty_csv_file_with_headers():   
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+        f.write("name,age,email\n")
+        f.close()
+        
+        temp_path = Path(f.name)
+        
+        try:
+            df = read_dataset(str(temp_path))
+            
+            assert df is not None
+            assert isinstance(df, pl.DataFrame)
+            assert df.height == 0
+            assert df.width == 3
+            assert df.columns == ["name", "age", "email"]  
+            assert df.schema["name"] == pl.String
+
+        finally:
+            temp_path.unlink()
+
+def test_completely_empty_file():
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+        f.close()
+        temp_path = Path(f.name)
+        try:
+            df = read_dataset(str(temp_path))
+            assert df.height == 0
+            assert df.width == 0
+        finally:
+            temp_path.unlink()
+
+def test_file_with_only_newlines():
+    """Test file containing only newlines."""
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+        f.write("\n\n\n")
+        f.close()
+
+        temp_path = Path(f.name)
+
+        try:
+            df = read_dataset(str(temp_path))
+            assert df.height == 0
+            assert df.width == 0
+        finally:
+            temp_path.unlink()
+
+@pytest.mark.parametrize("content, expected_height", [
+    ("",0),           
+    ("\n",0),         
+    ("a,b,c\n",0),    
+    ("a,b,c\n\n\n",2), 
+])
+def test_empty_csv_variations(content, expected_height):
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+        f.write(content)
+        f.close()
+
+        temp_path = Path(f.name)
+
+        try:
+            df = read_dataset(str(temp_path))
+            assert isinstance(df, pl.DataFrame)
+            assert df.height == expected_height
+        finally:
+            temp_path.unlink()
