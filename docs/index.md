@@ -62,11 +62,11 @@ Aniwa follows a modular layered architecture:
 
 ```text
 CLI
-→ Configuration
-→ Readers
-→ Profiling Engine
-→ Models
-→ Reports
+--> Configuration
+--> Readers
+--> Profiling Engine
+--> Models
+--> Reports
 ```
 
 ---
